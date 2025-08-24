@@ -43,6 +43,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
+import { aiProviderService } from '@/components/providers/AIProviderService';
 
 interface Message {
   id: string;
@@ -143,26 +144,29 @@ export const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({ cl
     setIsLoading(true);
     setIsTyping(true);
 
-    // Simulate realistic AI response with streaming effect
-    setTimeout(() => {
-      setIsTyping(false);
-      const responses = [
-        "🎨 I can help you create amazing visual content! Let me generate some ideas for your project...",
-        "💻 Perfect! I'll analyze your code and suggest improvements. Here's what I found...",
-        "🚀 Excellent question! Let me break this down into actionable steps for you...",
-        "🎯 I understand exactly what you need. Here's a comprehensive solution...",
-        "⚡ Great choice! This is where CoreSpark Hub really shines. Let me show you..."
-      ];
+    // Send actual AI request
+    try {
+      const providers = aiProviderService.getAvailableProviders();
+      const selectedProvider = providers.find(p => p.type === 'multimodal' || p.type === 'text') || providers[0];
+      
+      if (!selectedProvider) {
+        throw new Error('No AI providers available. Please configure your API keys.');
+      }
+
+      const response = await aiProviderService.sendMessage(
+        selectedProvider.id,
+        [...messages, userMessage]
+      );
 
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
-        content: responses[Math.floor(Math.random() * responses.length)] + `\n\nYour input: "${input}"\n\nThis demonstrates our multi-provider AI system that seamlessly integrates with OpenAI GPT-4, Anthropic Claude, Google Gemini, and more. Each provider brings unique strengths to enhance your creative workflow.`,
+        content: response.content,
         role: 'assistant',
-        timestamp: new Date(),
-        provider: ['GPT-4 Turbo', 'Claude 3 Opus', 'Gemini Pro', 'CoreSpark Pro'][Math.floor(Math.random() * 4)],
-        tokens: Math.floor(Math.random() * 150) + 50,
+        timestamp: response.timestamp,
+        provider: response.provider,
+        tokens: response.tokens,
         type: 'text',
-        isStreaming: true
+        isStreaming: false
       };
 
       setSessions(prev => prev.map(session => 
@@ -171,20 +175,32 @@ export const EnhancedChatInterface: React.FC<EnhancedChatInterfaceProps> = ({ cl
           : session
       ));
 
-      setIsLoading(false);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        content: `Error: ${error instanceof Error ? error.message : 'Failed to get AI response'}. Please check your API keys in Settings.`,
+        role: 'assistant',
+        timestamp: new Date(),
+        provider: 'System',
+        type: 'text',
+        isStreaming: false
+      };
 
-      // Remove streaming effect after a delay
-      setTimeout(() => {
-        setSessions(prev => prev.map(session => ({
-          ...session,
-          messages: session.messages.map(msg => 
-            msg.id === assistantMessage.id 
-              ? { ...msg, isStreaming: false }
-              : msg
-          )
-        })));
-      }, 2000);
-    }, 1500);
+      setSessions(prev => prev.map(session => 
+        session.id === activeSessionId 
+          ? { ...session, messages: [...session.messages, errorMessage] }
+          : session
+      ));
+
+      toast({
+        title: "AI Request Failed",
+        description: "Please check your API keys in Settings.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+      setIsTyping(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

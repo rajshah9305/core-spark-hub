@@ -39,6 +39,7 @@ import {
   Globe
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SettingsDialog } from '@/components/settings/SettingsDialog';
 
 interface Chat {
   id: string;
@@ -422,11 +423,15 @@ export const AdvancedSidebar: React.FC<AdvancedSidebarProps> = ({
         </div>
         
         {/* Settings */}
-        <Button variant="ghost" className="w-full justify-start" size="sm">
-          <Settings className="w-4 h-4 mr-2" />
-          Settings & API Keys
-          <ChevronRight className="w-4 h-4 ml-auto" />
-        </Button>
+        <SettingsDialog
+          trigger={
+            <Button variant="ghost" className="w-full justify-start" size="sm">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings & API Keys
+              <ChevronRight className="w-4 h-4 ml-auto" />
+            </Button>
+          }
+        />
       </div>
     </div>
   );

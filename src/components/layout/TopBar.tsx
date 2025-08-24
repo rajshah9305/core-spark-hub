@@ -23,6 +23,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SettingsDialog } from '@/components/settings/SettingsDialog';
 
 interface TopBarProps {
   className?: string;
@@ -176,9 +177,13 @@ export const TopBar: React.FC<TopBarProps> = ({ className }) => {
         </Button>
         
         {/* Settings */}
-        <Button variant="ghost" size="sm">
-          <Settings className="w-4 h-4" />
-        </Button>
+        <SettingsDialog
+          trigger={
+            <Button variant="ghost" size="sm">
+              <Settings className="w-4 h-4" />
+            </Button>
+          }
+        />
         
         {/* User Avatar */}
         <div className="relative">
